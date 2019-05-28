@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>Grouped Bar Chart using crossfilter</title>
+		<meta name="author" content="Praneeth, Nikshith">
+    <script src="../static/js/d3.js"></script><!-- version 5.9.2-->
+    <script src="../static/js/crossfilter.js"></script>
+    <script src="../static/js/dc.js"></script> <!-- version 3.0.4-->
+    </head>
+<body>
+	<div id="grouped_bar"></div>
+  <div id="Sponsor"></div>
+  
+
+  <script>
+    
+    var Data=[
+    {
+    "StudyName":"test study",
+    "ActualPassThroughCost":202000,
+    "ActualProfessionalCost":470000,
+    "ProfessionalCost":300000,
+    "PassThroughCost":200000,
+    "SponsorName": "Alpha"
+    },
+    {
+    "StudyName":"test random",
+    "ActualPassThroughCost":100000,
+    "ActualProfessionalCost":126565,
+    "ProfessionalCost":500000,
+    "PassThroughCost":50000,
+    "SponsorName": "Delta"
+
+    },
+    {
+    "StudyName":"test prime",
+    "ActualPassThroughCost":898900,
+    "ActualProfessionalCost":200000,
+    "ProfessionalCost":100000,
+    "PassThroughCost":200000,
+    "SponsorName": "Alpha"
+    },
+    {
+    "StudyName":"demo study",
+    "ActualPassThroughCost":546200,
+    "ActualProfessionalCost":230000,
+    "ProfessionalCost":500000,
+    "PassThroughCost":1000000,
+    "SponsorName": "Beta"
+    }];
+    
+
+  var domains=[]
+        Data.forEach(function (key) {
+
+            domains.push((key.StudyName));
+
+        });
+    
+  
+  var ndx = crossfilter(Data);
+
+  var composite = dc.compositeChart("#grouped_bar");
+  
+  var dim = ndx.dimension(function(d) { return d["StudyName"];});//choosing our required dimension for X-axis
+  var grp1 = dim.group().reduceSum(function(d) { return d["ProfessionalCost"]; });//Calculating Y values
+  var grp2 = dim.group().reduceSum(function(d) { return d["PassThroughCost"]; });
+  var grp3 = dim.group().reduceSum(function(d) { return d["ActualProfessionalCost"]; });
+  var grp4 = dim.group().reduceSum(function(d) { return d["ActualPassThroughCost"]; });
+
+  var chart1 = dc.barChart(composite)
+    .dimension(dim)
+    .centerBar(true)
+    .serieGap(30)
+    .valueAccessor(function(d) { return d.value; })
+    .group(grp1, "Professional");
+
+  var chart2 = dc.barChart(composite)
+    .dimension(dim)
+    .centerBar(true)
+    .serieGap(30)
+    .valueAccessor(function(d) { return d.value; })
+    .colors(d3.scaleOrdinal().range(['rgb(64, 105, 170)']))
+    .group(grp3, "ActualProfessional");
+
+  var chart3 = dc.barChart(composite)
+    .dimension(dim)
+    .centerBar(true)
+    .valueAccessor(function(d) { return d.value; })
+    .serieGap(30)
+    .colors(d3.scaleOrdinal().range(['rgb(186,190,120)']))
+    .group(grp2, "PassThrough")
+
+  var chart4 = dc.barChart(composite)
+    .dimension(dim)
+    .centerBar(true)
+    .serieGap(30)
+    .valueAccessor(function(d) { return d.value; })
+    .colors(d3.scaleOrdinal().range(['rgb(6, 1, 68)']))
+    .group(grp4, "ActualPassThrough")
+  
+  var leftMargin = composite.margins().left; //adjusting margins
+  composite.margins().left = 60;
+  leftMargin = composite.margins().left;
+  
+
+  composite
+    .width(1050)
+    .height(275)
+    .dimension(dim)
+    .x(d3.scaleBand().domain(domains))
+    .xUnits(dc.units.ordinal)
+    .yAxisLabel(["Costs"],30)
+    .elasticY(true)
+    .legend(dc.legend().x(900).y(30).itemHeight(13).gap(5)) //adjusting legend
+    .renderHorizontalGridLines(true)
+    .compose([chart1,chart2,chart3,chart4]) 
+    .brushOn(true);
+
+
+
+  var Sponsor_Dimension = ndx.dimension(function(d){ return d.SponsorName; });
+        var Sponsor_Group = Sponsor_Dimension.group();
+        var SponsorChart =     dc.pieChart('#Sponsor')
+                             .width(500)
+                             .height(373)
+                             .radius(150)
+                             .dimension(Sponsor_Dimension)
+                             .legend(dc.legend())
+                             .ordinalColors(['#ff7f0e', '#1f77b4', '#2ca02c','#d62728'])
+                             .group(Sponsor_Group)
+                             .on('pretransition', function(chart) {
+                                                                    chart.selectAll('text.pie-slice').text(function(d) {
+                                                                    return d.data.key + ' ' + dc.utils.printSingleValue((d.endAngle - d.startAngle) / (2*Math.PI) * 100) + '%';
+                                                                    })
+                                                                    }
+                                                                    ); //displaying percentages
+  dc.renderAll();   
+
+  </script>
+</body>
+</html>
